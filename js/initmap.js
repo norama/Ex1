@@ -129,6 +129,11 @@
 
       }
 
+      function hideMapform() {
+          var mapform = document.getElementById('mapform');
+          mapform.style.display = 'none';
+      }
+
       function showhideMapform() {
           var mapform = document.getElementById('mapform');
           mapform.style.display = mapform.style.display == 'none' ? 'block' : 'none';
@@ -169,7 +174,10 @@
       }
 
       function addMapClickListener() {        
-          map.addListener('click', function(e) { setItemMarkerOnClick(e); });
+          map.addListener('click', function(e) { 
+            setItemMarkerOnClick(e); 
+            hideMapform(); 
+          });
       }
 
       function removeMapClickListener() {
