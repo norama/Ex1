@@ -11,18 +11,57 @@
       // parameter when you first load the API. For example:
       // <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
 
+      var DOCID = '10c-6Dlo_vM54czB5e4kzTJoc6BoUciLTYbfHixH7';
+
+      var itemMarker = null;
+
       function initMap() {
-          var map = new google.maps.Map(document.getElementById('gmap'), {
+
+          map = new google.maps.Map(document.getElementById('gmap'), {
               center: {lat: -33.8688, lng: 151.2195},
               zoom: 13,
               mapTypeId: google.maps.MapTypeId.ROADMAP
           });
 
-          initLocation(map);
-          initAutocomplete(map);
+          addMapClickListener();
+
+          initLocation();
+          initAutocomplete();
+          initFusionTable();
       }
 
-      function initAutocomplete(map) {
+      function initLocation() {
+
+          // Try HTML5 geolocation.
+          if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(function(position) {
+                var pos = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+
+                setItemMarker(pos);
+                
+                map.setCenter(pos);
+              }, function(error) {
+                  handleLocationError(true, error);
+              });
+          } else {
+              // Browser doesn't support Geolocation
+              handleLocationError(false, '');
+          }
+      }
+
+
+      function handleLocationError(browserHasGeolocation, error) {
+          var infoWindow = new google.maps.InfoWindow({map: map});
+          infoWindow.setPosition(map.getCenter());
+          infoWindow.setContent(browserHasGeolocation ?
+                              'Error: The Geolocation service failed: ' + error.code +" : "+error.message :
+                              'Error: Your browser doesn\'t support geolocation.');
+      }
+
+      function initAutocomplete() {
 
           // Create the search box and link it to the UI element.
           var input = document.getElementById('pac-input');
@@ -35,18 +74,19 @@
           });
 
           var markers = [];
+
           // Listen for the event fired when the user selects a prediction and retrieve
           // more details for that place.
           searchBox.addListener('places_changed', function() {
               var places = searchBox.getPlaces();
 
               if (places.length == 0) {
-                return;
+                  return;
               }
 
               // Clear out the old markers.
               markers.forEach(function(marker) {
-                marker.setMap(null);
+                  marker.setMap(null);
               });
               markers = [];
 
@@ -65,14 +105,17 @@
                       scaledSize: new google.maps.Size(25, 25)
                   };
 
-                  // Create a marker for each place.
-                  markers.push(new google.maps.Marker({
+                  var marker = new google.maps.Marker({
                       map: map,
                       icon: icon,
                       title: place.name,
                       position: place.geometry.location,
                       draggable: true
-                  }));
+                  });
+
+
+                  // Create a marker for each place.
+                  markers.push(marker);
 
                   if (place.geometry.viewport) {
                       // Only geocodes have viewport.
@@ -83,40 +126,52 @@
               });
               map.fitBounds(bounds);
           });
+
       }
 
-      function initLocation(map) {
-          var infoWindow = new google.maps.InfoWindow({map: map});
+      function showhideMapform() {
+          var mapform = document.getElementById('mapform');
+          mapform.style.display = mapform.style.display == 'none' ? 'block' : 'none';
+      }
 
-          // Try HTML5 geolocation.
-          if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(function(position) {
-                var pos = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
+      function initFusionTable() {
+          var layer = new google.maps.FusionTablesLayer({
+              query: {
+                select: '\'Location\'',
+                from: DOCID
+              }
+          });
+          layer.setMap(map);
+      }
 
-                var marker = new google.maps.Marker({
-                    position: pos,
-                    map: map,
-                    title: 'My position',
-                    draggable: true
-                });
-                
-                map.setCenter(pos);
-              }, function(error) {
-                  handleLocationError(true, infoWindow, error, map.getCenter());
-              });
+      function setItemMarkerOnClick(e) {
+          setItemMarker(e.latLng);
+      }
+
+      function setItemMarker(pos) {
+          if (itemMarker == null) {
+              createItemMarker(pos);
           } else {
-              // Browser doesn't support Geolocation
-              handleLocationError(false, infoWindow, '', map.getCenter());
+              itemMarker.setPosition(pos);
           }
       }
 
+      function createItemMarker(pos) {
+          itemMarker = new google.maps.Marker({             
+              map: map,
+              position: pos,
+              title: 'Add new item',
+              draggable: true,
+              animation: google.maps.Animation.DROP
+          });
 
-      function handleLocationError(browserHasGeolocation, infoWindow, error, pos) {
-          infoWindow.setPosition(pos);
-          infoWindow.setContent(browserHasGeolocation ?
-                              'Error: The Geolocation service failed: ' + error.code +" : "+error.message :
-                              'Error: Your browser doesn\'t support geolocation.');
+          itemMarker.addListener('click', function() { showhideMapform(); });
+      }
+
+      function addMapClickListener() {        
+          map.addListener('click', function(e) { setItemMarkerOnClick(e); });
+      }
+
+      function removeMapClickListener() {
+          google.maps.event.clearListeners(map, 'click');
       }
