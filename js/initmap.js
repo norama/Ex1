@@ -11,7 +11,8 @@
     // parameter when you first load the API. For example:
     // <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
 
-    var DOCID = '10c-6Dlo_vM54czB5e4kzTJoc6BoUciLTYbfHixH7';
+    // FusionTable ID
+    var FTID = '10c-6Dlo_vM54czB5e4kzTJoc6BoUciLTYbfHixH7';
 
     var itemMarker = null;
 
@@ -137,13 +138,16 @@
     function showhideMapform() {
         var mapform = document.getElementById('mapform');
         mapform.style.display = mapform.style.display == 'none' ? 'block' : 'none';
+        if (mapform.style.display == 'block') {
+            storePosition();
+        }
     }
 
     function initFusionTable() {
         var layer = new google.maps.FusionTablesLayer({
             query: {
               select: '\'Location\'',
-              from: DOCID
+              from: FTID
             }
         });
         layer.setMap(map);
@@ -170,7 +174,25 @@
             animation: google.maps.Animation.DROP
         });
 
-        itemMarker.addListener('click', function() { showhideMapform(); });
+        itemMarker.addListener('click', function() { 
+            showhideMapform(); 
+        });
+
+        itemMarker.addListener('dragend', function() { 
+            storePosition();
+        });
+    }
+
+    function storePosition() {
+        if (itemMarker == null) {
+            return;
+        }
+        var lat = itemMarker.getPosition().lat();
+        var lng = itemMarker.getPosition().lng();
+        console.log(lat + ", " + lng);
+
+        document.getElementById('lat').value = lat;
+        document.getElementById('lng').value = lng;
     }
 
     function addMapClickListener() {        
